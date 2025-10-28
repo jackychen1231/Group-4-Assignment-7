@@ -2,7 +2,7 @@
 // ⚠️ Demo only: do NOT ship real keys in frontend. Use a proxy in production.
 
 
-const OPENAI_API_KEY = "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"; // <-- demo only
+const OPENAI_API_KEY = "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"; // <-- demo only
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions"; // compatible endpoint
 const OPENAI_MODEL = "gpt-4o-mini"; // lightweight, multimodal-capable text model
 
