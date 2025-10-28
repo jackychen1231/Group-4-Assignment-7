@@ -152,74 +152,46 @@ function hideTypingIndicator() {
 
 // ---------- OpenAI API integration ----------
 async function callOpenAIAPI(message) {
-  // System prompt tailored for FitGen AI
   const systemPrompt = `
 You are FitGen AI, a friendly, precise sizing and customer-support stylist for fashion/e-commerce.
-PRIORITIES:
-- Get brand, product, height, weight, chest/bust, waist, hips, and fit preference (slim/regular/relaxed).
-- If missing key details, ask 1–2 concise clarifying questions before recommending.
-- When recommending a size, include a confidence percentage and 1–2 line rationale.
-- Consider fabric behavior: cotton may shrink ~3–5%; blends hold shape; knits have ease; denim relaxes.
-- Offer two sizes if between, and suggest try-on guidance.
-- For returns/exchanges, collect order #, email, item/SKU, condition; outline steps briefly.
-- For care, give fabric-specific wash/dry/iron guidance and colorfastness tips.
-STYLE:
-- Be concise, friendly, and actionable. Use short bullet points when helpful.
-- Avoid medical or health claims.
+Ask brief clarifying questions if brand/product or key measurements are missing.
+When recommending a size, include confidence % and a one-line rationale.
+Consider fabric behavior: cotton may shrink 3–5%; blends hold shape; knits have ease; denim relaxes.
+For returns/exchanges, collect order #, email, item/SKU; outline steps briefly.
+Keep responses concise and actionable. Avoid medical claims.
 `;
 
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    ...conversationHistory,
-    { role: 'user', content: message }
-  ];
+  const headers = {
+    'Content-Type': 'application/json',
+    // ⚠️ For quick local testing ONLY. In production, proxy this server-side.
+    'Authorization': `Bearer ${OPENAI_API_KEY}`
+  };
 
-  // If you proxy through your own backend (recommended), replace headers below
-  // and call your endpoint with only { messages } in the body.
-  const headers =
-    OPENAI_URL.startsWith('/api/')
-      ? { 'Content-Type': 'application/json' }
-      : {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
-        };
+  const body = {
+    model: 'gpt-4o-mini',
+    temperature: 0.3,
+    max_tokens: 600,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      ...conversationHistory,
+      { role: 'user', content: message }
+    ]
+  };
 
-  const body =
-  OPENAI_URL.startsWith('/api/')
-    ? JSON.stringify({ messages })
-    : JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages,
-        temperature: 0.3,
-        max_tokens: 600,
-      });
+  // Make sure OPENAI_URL is EXACTLY this when calling OpenAI directly:
+  // const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+  const res = await fetch(OPENAI_URL, { method: 'POST', headers, body: JSON.stringify(body) });
 
-  const response = await fetch(OPENAI_URL, {
-    method: 'POST',
-    headers,
-    body
-  });
-
-  if (!response.ok) {
-    // If using your proxy, surface backend error text
-    const errText = await response.text().catch(() => '');
-    throw new Error(`API request failed (${response.status}): ${errText}`);
+  // Helpful error surfacing to avoid silent fallback
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    throw new Error(`OpenAI ${res.status} – ${txt}`);
   }
 
-  // If calling OpenAI directly
-  if (!OPENAI_URL.startsWith('/api/')) {
-    const data = await response.json();
-    if (!data.choices?.[0]?.message?.content) {
-      throw new Error('Invalid API response format');
-    }
-    return data.choices[0].message.content.trim();
-  }
-
-  // If going through your own proxy that returns { content }
-  const data = await response.json();
-  const content = data.content || data.reply || data.message || '';
-  if (!content) throw new Error('Invalid proxy response format');
-  return String(content).trim();
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content?.trim();
+  if (!content) throw new Error('Malformed OpenAI response');
+  return content;
 }
 
 // ---------- Utility: basic formatting & linkify ----------
