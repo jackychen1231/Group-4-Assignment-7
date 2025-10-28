@@ -1,215 +1,295 @@
-// Global variables
+// =====================================================
+// FitGen AI • Chatbot (OpenAI)
+// Mirrors your Groq-style structure, but uses OpenAI
+// IDs referenced in your HTML: chatContainer, userInput, sendButton
+// =====================================================
+
+// ---------- Global variables ----------
 const chatContainer = document.getElementById('chatContainer');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
-// Groq API configuration (will be provided by instructor)
-const GROQ_API_KEY = 'YOUR_API_KEY_HERE'; // Replace with provided key
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+
+// ---------- OpenAI API configuration ----------
+// ⚠️ For production, DO NOT expose your key in the browser.
+// Instead, set OPENAI_PROXY_URL = '/api/chat' and handle the key server-side.
+const OPENAI_API_KEY = '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'; // <- replace for quick local demo only
+const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'; // or your '/api/chat' proxy
+
 // Conversation history for context
 let conversationHistory = [];
-// Initialize chat functionality
-document.addEventListener('DOMContentLoaded', function() {
-// Enter key to send message
-userInput.addEventListener('keypress', function(e) {
-if (e.key === 'Enter' && !e.shiftKey) {
-e.preventDefault();
-sendMessage();
-}
+
+// ---------- Initialize chat functionality ----------
+document.addEventListener('DOMContentLoaded', function () {
+  // Enter key to send message
+  userInput.addEventListener('keypress', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Auto-focus input
+  userInput.focus();
+  console.log('FitGen AI Stylist initialized');
 });
-// Auto-focus input
-userInput.focus();
-console.log('Customer Service Chatbot initialized');
-});
-// Send message function
+
+// ---------- Send message function ----------
 async function sendMessage() {
-const message = userInput.value.trim();
-if (!message) return;
-// Disable input while processing
-userInput.disabled = true;
-sendButton.disabled = true;
-// Add user message to chat
-addMessage(message, 'user');
-userInput.value = '';
-// Show typing indicator
-showTypingIndicator();
-try {
-// Call Groq API with conversation context
-const response = await callGroqAPI(message);
-hideTypingIndicator();
-// Add bot response to chat
-addMessage(response, 'bot');
-// Update conversation history
-conversationHistory.push(
-{ role: 'user', content: message },
-{ role: 'assistant', content: response }
-);
-// Limit history to last 20 messages for performance
-if (conversationHistory.length > 20) {
-conversationHistory = conversationHistory.slice(-20);
+  const message = userInput.value.trim();
+  if (!message) return;
+
+  // Disable input while processing
+  userInput.disabled = true;
+  sendButton.disabled = true;
+
+  // Add user message to chat
+  addMessage(message, 'user');
+  userInput.value = '';
+
+  // Show typing indicator
+  showTypingIndicator();
+
+  try {
+    // Call OpenAI API with conversation context
+    const response = await callOpenAIAPI(message);
+
+    hideTypingIndicator();
+
+    // Add bot response to chat
+    const formatted = formatResponse(response);
+    addMessage(formatted, 'bot');
+
+    // Update conversation history
+    conversationHistory.push(
+      { role: 'user', content: message },
+      { role: 'assistant', content: response }
+    );
+
+    // Limit history to last 20 messages for performance
+    if (conversationHistory.length > 20) {
+      conversationHistory = conversationHistory.slice(-20);
+    }
+
+    // Optional analytics log
+    logInteraction(message, response);
+  } catch (error) {
+    hideTypingIndicator();
+    addMessage(
+      'I’m sorry—I hit a snag. I can connect you to a human stylist right away. Would you like me to do that?',
+      'bot'
+    );
+    console.error('OpenAI API Error:', error);
+  } finally {
+    // Re-enable input
+    userInput.disabled = false;
+    sendButton.disabled = false;
+    userInput.focus();
+  }
 }
-} catch (error) {
-hideTypingIndicator();
-addMessage('I apologize, but I\'m experiencing technical difficulties right now.
-Let me connect you with a human agent who can assist you immediately.', 'bot');
-console.error('Groq API Error:', error);
-} finally {
-// Re-enable input
-userInput.disabled = false;
-sendButton.disabled = false;
-userInput.focus();
-}
-}
-// Quick message function for buttons
+
+// ---------- Quick message function for buttons ----------
 function sendQuickMessage(message) {
-userInput.value = message;
-sendMessage();
+  userInput.value = message;
+  sendMessage();
 }
-// Add message to chat interface
+
+// ---------- Add message to chat interface ----------
 function addMessage(text, sender) {
-const messageDiv = document.createElement('div');
-messageDiv.className = `message ${sender}-message`;
-const avatarDiv = document.createElement('div');
-avatarDiv.className = 'message-avatar';
-avatarDiv.textContent = sender === 'user' ? '👤' : '🤖';
-const contentDiv = document.createElement('div');
-contentDiv.className = 'message-content';
-// Handle both plain text and HTML content
-if (text.includes('<')) {
-contentDiv.innerHTML = text;
-} else {
-contentDiv.textContent = text;
+  const messageDiv = document.createElement('div');
+  messageDiv.className = `message ${sender}-message`;
+
+  const avatarDiv = document.createElement('div');
+  avatarDiv.className = 'message-avatar';
+  avatarDiv.textContent = sender === 'user' ? '👤' : '👗';
+
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'message-content';
+
+  // Allow basic HTML (already sanitized/created by formatResponse)
+  if (/<[a-z][\s\S]*>/i.test(text)) {
+    contentDiv.innerHTML = text;
+  } else {
+    contentDiv.textContent = text;
+  }
+
+  messageDiv.appendChild(avatarDiv);
+  messageDiv.appendChild(contentDiv);
+  chatContainer.appendChild(messageDiv);
+
+  // Scroll to bottom
+  chatContainer.scrollTop = chatContainer.scrollHeight;
 }
-messageDiv.appendChild(avatarDiv);
-messageDiv.appendChild(contentDiv);
-chatContainer.appendChild(messageDiv);
-// Scroll to bottom
-chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-// Show typing indicator
+
+// ---------- Typing indicator ----------
 function showTypingIndicator() {
-const typingDiv = document.createElement('div');
-typingDiv.className = 'typing-indicator';
-typingDiv.id = 'typingIndicator';
-const avatarDiv = document.createElement('div');
-avatarDiv.className = 'message-avatar';
-avatarDiv.textContent = '🤖';
-const contentDiv = document.createElement('div');
-contentDiv.className = 'typing-content';
-contentDiv.innerHTML = `
-<span>AI is thinking</span>
-<div class="typing-dots">
-<span></span>
-<span></span>
-<span></span>
-</div>
-`;
-typingDiv.appendChild(avatarDiv);
-typingDiv.appendChild(contentDiv);
-chatContainer.appendChild(typingDiv);
-chatContainer.scrollTop = chatContainer.scrollHeight;
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'typing-indicator';
+  typingDiv.id = 'typingIndicator';
+
+  const avatarDiv = document.createElement('div');
+  avatarDiv.className = 'message-avatar';
+  avatarDiv.textContent = '👗';
+
+  const contentDiv = document.createElement('div');
+  contentDiv.className = 'typing-content';
+  contentDiv.innerHTML = `
+    <span>AI is thinking</span>
+    <div class="typing-dots">
+      <span></span><span></span><span></span>
+    </div>
+  `;
+
+  typingDiv.appendChild(avatarDiv);
+  typingDiv.appendChild(contentDiv);
+  chatContainer.appendChild(typingDiv);
+  chatContainer.scrollTop = chatContainer.scrollHeight;
 }
-// Hide typing indicator
+
 function hideTypingIndicator() {
-const typingIndicator = document.getElementById('typingIndicator');
-if (typingIndicator) {
-typingIndicator.remove();
+  const typingIndicator = document.getElementById('typingIndicator');
+  if (typingIndicator) typingIndicator.remove();
 }
+
+// ---------- OpenAI API integration ----------
+async function callOpenAIAPI(message) {
+  // System prompt tailored for FitGen AI
+  const systemPrompt = `
+You are FitGen AI, a friendly, precise sizing and customer-support stylist for fashion/e-commerce.
+PRIORITIES:
+- Get brand, product, height, weight, chest/bust, waist, hips, and fit preference (slim/regular/relaxed).
+- If missing key details, ask 1–2 concise clarifying questions before recommending.
+- When recommending a size, include a confidence percentage and 1–2 line rationale.
+- Consider fabric behavior: cotton may shrink ~3–5%; blends hold shape; knits have ease; denim relaxes.
+- Offer two sizes if between, and suggest try-on guidance.
+- For returns/exchanges, collect order #, email, item/SKU, condition; outline steps briefly.
+- For care, give fabric-specific wash/dry/iron guidance and colorfastness tips.
+STYLE:
+- Be concise, friendly, and actionable. Use short bullet points when helpful.
+- Avoid medical or health claims.
+`;
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...conversationHistory,
+    { role: 'user', content: message }
+  ];
+
+  // If you proxy through your own backend (recommended), replace headers below
+  // and call your endpoint with only { messages } in the body.
+  const headers =
+    OPENAI_URL.startsWith('/api/')
+      ? { 'Content-Type': 'application/json' }
+      : {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        };
+
+  const body =
+  OPENAI_URL.startsWith('/api/')
+    ? JSON.stringify({ messages })
+    : JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages,
+        temperature: 0.3,
+        max_tokens: 600,
+      });
+
+  const response = await fetch(OPENAI_URL, {
+    method: 'POST',
+    headers,
+    body
+  });
+
+  if (!response.ok) {
+    // If using your proxy, surface backend error text
+    const errText = await response.text().catch(() => '');
+    throw new Error(`API request failed (${response.status}): ${errText}`);
+  }
+
+  // If calling OpenAI directly
+  if (!OPENAI_URL.startsWith('/api/')) {
+    const data = await response.json();
+    if (!data.choices?.[0]?.message?.content) {
+      throw new Error('Invalid API response format');
+    }
+    return data.choices[0].message.content.trim();
+  }
+
+  // If going through your own proxy that returns { content }
+  const data = await response.json();
+  const content = data.content || data.reply || data.message || '';
+  if (!content) throw new Error('Invalid proxy response format');
+  return String(content).trim();
 }
-// Groq API integration
-async function callGroqAPI(message) {
-const systemPrompt = `You are a professional customer service representative for
-TechCorp, a technology company specializing in software solutions, cloud services,
-and mobile applications.
-COMPANY INFORMATION:
-- Products: Business software, cloud platforms, mobile apps, API services
-- Return Policy: 30-day money-back guarantee with original receipt
-- Shipping: 2-3 business days standard (free over $100), next-day available ($25)
-- Support Hours: 24/7 for premium customers, 9 AM - 6 PM EST for standard
-customers
-- Technical Support: Free for all products with active licenses
-- Billing: Monthly and annual plans available, enterprise pricing on request
-RESPONSE GUIDELINES:
-- Be friendly, professional, and empathetic
-- Provide specific, actionable solutions
-- If you cannot resolve an issue, offer to escalate to a human specialist
-- Always ask if there's anything else you can help with
-- Keep responses helpful but concise
-- Use positive language even when delivering difficult news
-- Include relevant policy information when appropriate
-- Offer alternatives when the primary solution isn't available
-COMMON SCENARIOS:
-- Product inquiries: Provide features, pricing, compatibility info
-- Order issues: Check status, modify orders, process returns
-- Technical problems: Basic troubleshooting, escalation procedures
-- Billing questions: Explain charges, update payment methods, refund policies
-- Account management: Password resets, profile updates, subscription changes
-Remember: You represent TechCorp's commitment to excellent customer service.`;
-const messages = [
-{ role: 'system', content: systemPrompt },
-...conversationHistory,
-{ role: 'user', content: message }
-];
-try {
-const response = await fetch(GROQ_URL, {
-method: 'POST',
-headers: {
-'Authorization': `Bearer ${GROQ_API_KEY}`,
-'Content-Type': 'application/json'
-},
-body: JSON.stringify({
-model: 'mixtral-8x7b-32768',
-messages: messages,
-temperature: 0.7,
-max_tokens: 500,
-top_p: 0.9
-})
-});
-if (!response.ok) {
-throw new Error(`API request failed with status ${response.status}`);
-}
-const data = await response.json();
-if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-throw new Error('Invalid API response format');
-}
-return data.choices[0].message.content.trim();
-} catch (error) {
-console.error('Groq API Error Details:', error);
-// Provide helpful fallback responses
-const fallbackResponses = {
-'return': 'You can return any product within 30 days with your original receipt.
-Would you like me to start a return request for you?',
-'shipping': 'We offer free standard shipping (2-3 days) on orders over $100, or
-next-day shipping for $25. What would work best for you?',
-'support': 'I\'d be happy to help with technical support. Can you tell me more
-about the specific issue you\'re experiencing?',
-'billing': 'For billing questions, I can help explain charges or connect you with
-our billing specialist. What specific billing question do you have?'
-};
-const lowerMessage = message.toLowerCase();
-for (const [key, response] of Object.entries(fallbackResponses)) {
-if (lowerMessage.includes(key)) {
-return response;
-}
-}
-return 'I apologize, but I\'m having trouble accessing our AI system right now. Let
-me connect you with one of our human specialists who can help you immediately. Is
-this urgent, or can someone follow up with you within an hour?';
-}
-}
-// Utility functions for enhanced functionality
+
+// ---------- Utility: basic formatting & linkify ----------
 function formatResponse(text) {
-// Add basic formatting for better readability
-return text
-.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-.replace(/\*(.*?)\*/g, '<em>$1</em>')
-.replace(/\n/g, '<br>');
+  // Bold/italic + simple URL linkify + line breaks
+  const escaped = escapeHTML(text);
+  const withMarkdown =
+    escaped
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>');
+
+  return linkify(withMarkdown);
 }
+
+function escapeHTML(s) {
+  return s.replace(/[&<>"']/g, (m) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[m]));
+}
+
+function linkify(text) {
+  const urlRegex = /(https?:\/\/[^\s<]+)/g;
+  return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+}
+
+// ---------- Utility: fallback responses (when API fails) ----------
+function fallbackFor(message) {
+  const lower = message.toLowerCase();
+  const map = {
+    size: `To recommend a size, please share:
+• Brand & product (e.g., Nike Club Fleece Hoodie)
+• Height & weight
+• Chest/Bust, Waist, Hips
+• Fit preference (slim/regular/relaxed)
+I’ll give you a size + confidence and a short rationale.`,
+    return: `You can start a return or size exchange in a few steps:
+• Order # and email
+• Item condition (unused/with tags)
+• Reason (size/fit/etc.)
+Would you like me to begin the return with your order details?`,
+    exchange: `Happy to help with a size swap:
+• Order # and email
+• New size you’d like
+I’ll create the exchange label and next steps.`,
+    ship: `Shipping basics:
+• Standard: 2–4 business days
+• Expedited options at checkout
+• Free standard over \$100 (varies by promo)
+Want me to check your specific order status?`,
+    track: `I can track your order—please share:
+• Order #
+• Email or shipping zip code`
+  };
+  for (const [key, val] of Object.entries(map)) {
+    if (lower.includes(key)) return val;
+  }
+  return `I’m having trouble reaching the AI right now. Do you want me to hand this off to a human stylist, or try again in a minute?`;
+}
+
+// ---------- Optional analytics ----------
 function logInteraction(userMessage, botResponse) {
-// Log for analytics (in real implementation, send to analytics service)
-console.log('Interaction logged:', {
-timestamp: new Date().toISOString(),
-user: userMessage,
-bot: botResponse,
-sessionId: 'demo-session'
-});
+  console.log('Interaction logged:', {
+    timestamp: new Date().toISOString(),
+    user: userMessage,
+    bot: botResponse,
+    sessionId: 'fitgen-demo'
+  });
 }
