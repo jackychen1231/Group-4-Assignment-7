@@ -1,267 +1,227 @@
-// =====================================================
-// FitGen AI • Chatbot (OpenAI)
-// Mirrors your Groq-style structure, but uses OpenAI
-// IDs referenced in your HTML: chatContainer, userInput, sendButton
-// =====================================================
+// =========================================
+// FitGen AI • Chat Logic with OpenAI API
+// -----------------------------------------
+// Handles user input, message display,
+// and real OpenAI API integration
+// =========================================
 
-// ---------- Global variables ----------
 const chatContainer = document.getElementById('chatContainer');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 
-// ---------- OpenAI API configuration ----------
-// ⚠️ For production, DO NOT expose your key in the browser.
-// Instead, set OPENAI_PROXY_URL = '/api/chat' and handle the key server-side.
-const OPENAI_API_KEY = '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'; // <- replace for quick local demo only
-const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'; // or your '/api/chat' proxy
+// ⚠️ IMPORTANT: Replace with your actual OpenAI API key
+// For production, store this securely on your backend, NOT in frontend code
+const OPENAI_API_KEY = 'sk-YOUR-API-KEY-HERE';
 
 // Conversation history for context
-let conversationHistory = [];
+let conversationHistory = [
+  {
+    role: 'system',
+    content: `You are FitGen AI, a helpful fashion and sizing assistant chatbot for an e-commerce clothing store. Your expertise includes:
 
-// ---------- Initialize chat functionality ----------
-document.addEventListener('DOMContentLoaded', function () {
-  // Enter key to send message
-  userInput.addEventListener('keypress', function (e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
+- Providing size recommendations based on user measurements (height, weight, chest, waist)
+- Comparing fits across different brands (Nike, Adidas, Uniqlo, H&M, etc.)
+- Explaining return and exchange policies
+- Helping track orders
+- Providing fabric care instructions
+- Offering styling advice
 
-  // Auto-focus input
-  userInput.focus();
-  console.log('FitGen AI Stylist initialized');
+Be friendly, concise, and helpful. Use emojis occasionally. When giving size recommendations, always ask for measurements if not provided. Format responses with bullet points when listing multiple items.
+
+Store policies:
+- 30-day returns with free shipping
+- Size exchanges ship immediately
+- Refunds processed in 5-7 business days
+- Customer service available Mon-Fri 9AM-8PM EST, Sat-Sun 10AM-6PM EST`
+  }
+];
+
+// Send message on Enter key
+userInput.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
 });
 
-// ---------- Send message function ----------
+// Main send message function
 async function sendMessage() {
   const message = userInput.value.trim();
+  
   if (!message) return;
-
-  // Disable input while processing
-  userInput.disabled = true;
-  sendButton.disabled = true;
-
+  
   // Add user message to chat
   addMessage(message, 'user');
+  
+  // Clear input
   userInput.value = '';
-
-  // Show typing indicator
-  showTypingIndicator();
-
+  
+  // Disable send button and show loading state
+  sendButton.disabled = true;
+  sendButton.innerHTML = '<span class="send-icon">⏳</span>';
+  
+  // Add user message to conversation history
+  conversationHistory.push({
+    role: 'user',
+    content: message
+  });
+  
   try {
-    // Call OpenAI API with conversation context
-    const response = await callOpenAIAPI(message);
-
-    hideTypingIndicator();
-
+    // Call OpenAI API
+    const botResponse = await getOpenAIResponse();
+    
     // Add bot response to chat
-    const formatted = formatResponse(response);
-    addMessage(formatted, 'bot');
-
-    // Update conversation history
-    conversationHistory.push(
-      { role: 'user', content: message },
-      { role: 'assistant', content: response }
-    );
-
-    // Limit history to last 20 messages for performance
-    if (conversationHistory.length > 20) {
-      conversationHistory = conversationHistory.slice(-20);
-    }
-
-    // Optional analytics log
-    logInteraction(message, response);
+    addMessage(botResponse, 'bot');
+    
+    // Add bot response to conversation history
+    conversationHistory.push({
+      role: 'assistant',
+      content: botResponse
+    });
+    
   } catch (error) {
-    hideTypingIndicator();
-    addMessage(
-      'I’m sorry—I hit a snag. I can connect you to a human stylist right away. Would you like me to do that?',
-      'bot'
-    );
     console.error('OpenAI API Error:', error);
+    addMessage('Sorry, I encountered an error connecting to the AI service. Please try again! 😓', 'bot');
   } finally {
-    // Re-enable input
-    userInput.disabled = false;
+    // Re-enable send button
     sendButton.disabled = false;
+    sendButton.innerHTML = '<span class="send-icon">➤</span>';
     userInput.focus();
   }
 }
 
-// ---------- Quick message function for buttons ----------
+// Quick message buttons
 function sendQuickMessage(message) {
   userInput.value = message;
+  userInput.focus();
+  // Auto-send the quick message
   sendMessage();
 }
 
-// ---------- Add message to chat interface ----------
+// Add message to chat container
 function addMessage(text, sender) {
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${sender}-message`;
-
-  const avatarDiv = document.createElement('div');
-  avatarDiv.className = 'message-avatar';
-  avatarDiv.textContent = sender === 'user' ? '👤' : '👗';
-
-  const contentDiv = document.createElement('div');
-  contentDiv.className = 'message-content';
-
-  // Allow basic HTML (already sanitized/created by formatResponse)
-  if (/<[a-z][\s\S]*>/i.test(text)) {
-    contentDiv.innerHTML = text;
+  
+  const avatar = document.createElement('div');
+  avatar.className = 'message-avatar';
+  avatar.textContent = sender === 'bot' ? '👗' : '👤';
+  
+  const content = document.createElement('div');
+  content.className = 'message-content';
+  
+  // Convert markdown-style formatting to HTML
+  if (sender === 'bot') {
+    content.innerHTML = formatBotMessage(text);
   } else {
-    contentDiv.textContent = text;
+    content.textContent = text;
   }
-
-  messageDiv.appendChild(avatarDiv);
-  messageDiv.appendChild(contentDiv);
+  
+  messageDiv.appendChild(avatar);
+  messageDiv.appendChild(content);
+  
   chatContainer.appendChild(messageDiv);
-
-  // Scroll to bottom
-  chatContainer.scrollTop = chatContainer.scrollHeight;
+  
+  // Smooth scroll to bottom
+  setTimeout(() => {
+    chatContainer.scrollTo({
+      top: chatContainer.scrollHeight,
+      behavior: 'smooth'
+    });
+  }, 50);
 }
 
-// ---------- Typing indicator ----------
-function showTypingIndicator() {
-  const typingDiv = document.createElement('div');
-  typingDiv.className = 'typing-indicator';
-  typingDiv.id = 'typingIndicator';
+// Format bot messages (convert markdown-style to HTML)
+function formatBotMessage(text) {
+  // Convert **bold** to <strong>
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // Convert bullet points to proper lists
+  const lines = text.split('\n');
+  let html = '';
+  let inList = false;
+  
+  lines.forEach(line => {
+    line = line.trim();
+    
+    if (line.startsWith('- ') || line.startsWith('• ')) {
+      if (!inList) {
+        html += '<ul>';
+        inList = true;
+      }
+      html += `<li>${line.substring(2)}</li>`;
+    } else {
+      if (inList) {
+        html += '</ul>';
+        inList = false;
+      }
+      if (line) {
+        html += `<p>${line}</p>`;
+      }
+    }
+  });
+  
+  if (inList) {
+    html += '</ul>';
+  }
+  
+  return html;
+}
 
-  const avatarDiv = document.createElement('div');
-  avatarDiv.className = 'message-avatar';
-  avatarDiv.textContent = '👗';
+// =========================================
+// OpenAI API Integration
+// =========================================
 
-  const contentDiv = document.createElement('div');
-  contentDiv.className = 'typing-content';
-  contentDiv.innerHTML = `
-    <span>AI is thinking</span>
-    <div class="typing-dots">
-      <span></span><span></span><span></span>
+async function getOpenAIResponse() {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini', // Use gpt-4o, gpt-4-turbo, or gpt-3.5-turbo based on your needs
+      messages: conversationHistory,
+      max_tokens: 500,
+      temperature: 0.7,
+      top_p: 1,
+      frequency_penalty: 0.3,
+      presence_penalty: 0.3
+    })
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'API request failed');
+  }
+  
+  const data = await response.json();
+  return data.choices[0].message.content;
+}
+
+// =========================================
+// Optional: Clear conversation history
+// =========================================
+
+function resetConversation() {
+  conversationHistory = conversationHistory.slice(0, 1); // Keep only system message
+  chatContainer.innerHTML = `
+    <div class="message bot-message">
+      <div class="message-avatar">👗</div>
+      <div class="message-content">
+        <p>Hi! I'm your <strong>FitGen AI Stylist</strong>. I can help you with:</p>
+        <ul>
+          <li><strong>Find My Size:</strong> brand-specific sizing & fit advice</li>
+          <li><strong>Compare Fits:</strong> slim vs. regular vs. relaxed</li>
+          <li><strong>Returns & Exchanges:</strong> start a return or size swap</li>
+          <li><strong>Order Help:</strong> track shipments & update addresses</li>
+          <li><strong>Care & Materials:</strong> wash/dry guidance by fabric</li>
+        </ul>
+        <p>Tell me your height/weight or upload measurements, the brand, and how you like things to fit. I'll recommend a size and confidence score.</p>
+      </div>
     </div>
   `;
-
-  typingDiv.appendChild(avatarDiv);
-  typingDiv.appendChild(contentDiv);
-  chatContainer.appendChild(typingDiv);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-function hideTypingIndicator() {
-  const typingIndicator = document.getElementById('typingIndicator');
-  if (typingIndicator) typingIndicator.remove();
-}
-
-// ---------- OpenAI API integration ----------
-async function callOpenAIAPI(message) {
-  const systemPrompt = `
-You are FitGen AI, a friendly, precise sizing and customer-support stylist for fashion/e-commerce.
-Ask brief clarifying questions if brand/product or key measurements are missing.
-When recommending a size, include confidence % and a one-line rationale.
-Consider fabric behavior: cotton may shrink 3–5%; blends hold shape; knits have ease; denim relaxes.
-For returns/exchanges, collect order #, email, item/SKU; outline steps briefly.
-Keep responses concise and actionable. Avoid medical claims.
-`;
-
-  const headers = {
-    'Content-Type': 'application/json',
-    // ⚠️ For quick local testing ONLY. In production, proxy this server-side.
-    'Authorization': `Bearer ${OPENAI_API_KEY}`
-  };
-
-  const body = {
-    model: 'gpt-4o-mini',
-    temperature: 0.3,
-    max_tokens: 600,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      ...conversationHistory,
-      { role: 'user', content: message }
-    ]
-  };
-
-  // Make sure OPENAI_URL is EXACTLY this when calling OpenAI directly:
-  // const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-  const res = await fetch(OPENAI_URL, { method: 'POST', headers, body: JSON.stringify(body) });
-
-  // Helpful error surfacing to avoid silent fallback
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '');
-    throw new Error(`OpenAI ${res.status} – ${txt}`);
-  }
-
-  const data = await res.json();
-  const content = data?.choices?.[0]?.message?.content?.trim();
-  if (!content) throw new Error('Malformed OpenAI response');
-  return content;
-}
-
-// ---------- Utility: basic formatting & linkify ----------
-function formatResponse(text) {
-  // Bold/italic + simple URL linkify + line breaks
-  const escaped = escapeHTML(text);
-  const withMarkdown =
-    escaped
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/\n/g, '<br>');
-
-  return linkify(withMarkdown);
-}
-
-function escapeHTML(s) {
-  return s.replace(/[&<>"']/g, (m) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  }[m]));
-}
-
-function linkify(text) {
-  const urlRegex = /(https?:\/\/[^\s<]+)/g;
-  return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
-}
-
-// ---------- Utility: fallback responses (when API fails) ----------
-function fallbackFor(message) {
-  const lower = message.toLowerCase();
-  const map = {
-    size: `To recommend a size, please share:
-• Brand & product (e.g., Nike Club Fleece Hoodie)
-• Height & weight
-• Chest/Bust, Waist, Hips
-• Fit preference (slim/regular/relaxed)
-I’ll give you a size + confidence and a short rationale.`,
-    return: `You can start a return or size exchange in a few steps:
-• Order # and email
-• Item condition (unused/with tags)
-• Reason (size/fit/etc.)
-Would you like me to begin the return with your order details?`,
-    exchange: `Happy to help with a size swap:
-• Order # and email
-• New size you’d like
-I’ll create the exchange label and next steps.`,
-    ship: `Shipping basics:
-• Standard: 2–4 business days
-• Expedited options at checkout
-• Free standard over \$100 (varies by promo)
-Want me to check your specific order status?`,
-    track: `I can track your order—please share:
-• Order #
-• Email or shipping zip code`
-  };
-  for (const [key, val] of Object.entries(map)) {
-    if (lower.includes(key)) return val;
-  }
-  return `I’m having trouble reaching the AI right now. Do you want me to hand this off to a human stylist, or try again in a minute?`;
-}
-
-// ---------- Optional analytics ----------
-function logInteraction(userMessage, botResponse) {
-  console.log('Interaction logged:', {
-    timestamp: new Date().toISOString(),
-    user: userMessage,
-    bot: botResponse,
-    sessionId: 'fitgen-demo'
-  });
-}
+// Add reset button listener if you add one to your HTML
+// document.getElementById('resetButton')?.addEventListener('click', resetConversati
