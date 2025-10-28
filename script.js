@@ -1,23 +1,23 @@
 // =========================================
-// FitGen AI • Chat Logic with OpenAI API
+// FitGen AI • Chat Logic with Claude API
 // -----------------------------------------
 // Handles user input, message display,
-// and real OpenAI API integration
+// and real Claude API integration
 // =========================================
 
 const chatContainer = document.getElementById('chatContainer');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 
-// ⚠️ IMPORTANT: Replace with your actual OpenAI API key
+// ⚠️ IMPORTANT: Replace with your actual Anthropic API key
 // For production, store this securely on your backend, NOT in frontend code
-const OPENAI_API_KEY = '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';
+const ANTHROPIC_API_KEY = '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';
 
 // Conversation history for context
-let conversationHistory = [
-  {
-    role: 'system',
-    content: `You are FitGen AI, a helpful fashion and sizing assistant chatbot for an e-commerce clothing store. Your expertise includes:
+let conversationHistory = [];
+
+// System prompt that defines the AI's personality and knowledge
+const SYSTEM_PROMPT = `You are FitGen AI, a helpful fashion and sizing assistant chatbot for an e-commerce clothing store. Your expertise includes:
 
 - Providing size recommendations based on user measurements (height, weight, chest, waist)
 - Comparing fits across different brands (Nike, Adidas, Uniqlo, H&M, etc.)
@@ -32,9 +32,9 @@ Store policies:
 - 30-day returns with free shipping
 - Size exchanges ship immediately
 - Refunds processed in 5-7 business days
-- Customer service available Mon-Fri 9AM-8PM EST, Sat-Sun 10AM-6PM EST`
-  }
-];
+- Customer service available Mon-Fri 9AM-8PM EST, Sat-Sun 10AM-6PM EST
+
+Keep responses conversational and under 200 words unless detailed information is requested.`;
 
 // Send message on Enter key
 userInput.addEventListener('keypress', (e) => {
@@ -67,8 +67,8 @@ async function sendMessage() {
   });
   
   try {
-    // Call OpenAI API
-    const botResponse = await getOpenAIResponse();
+    // Call Claude API
+    const botResponse = await getClaudeResponse();
     
     // Add bot response to chat
     addMessage(botResponse, 'bot');
@@ -80,7 +80,7 @@ async function sendMessage() {
     });
     
   } catch (error) {
-    console.error('OpenAI API Error:', error);
+    console.error('Claude API Error:', error);
     addMessage('Sorry, I encountered an error connecting to the AI service. Please try again! 😓', 'bot');
   } finally {
     // Re-enable send button
@@ -169,24 +169,22 @@ function formatBotMessage(text) {
 }
 
 // =========================================
-// OpenAI API Integration
+// Claude API Integration
 // =========================================
 
-async function getOpenAIResponse() {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+async function getClaudeResponse() {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENAI_API_KEY}`
+      'x-api-key': ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini', // Use gpt-4o, gpt-4-turbo, or gpt-3.5-turbo based on your needs
-      messages: conversationHistory,
-      max_tokens: 500,
-      temperature: 0.7,
-      top_p: 1,
-      frequency_penalty: 0.3,
-      presence_penalty: 0.3
+      model: 'claude-sonnet-4-20250514',  // Latest Claude Sonnet model
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      messages: conversationHistory
     })
   });
   
@@ -196,7 +194,7 @@ async function getOpenAIResponse() {
   }
   
   const data = await response.json();
-  return data.choices[0].message.content;
+  return data.content[0].text;
 }
 
 // =========================================
@@ -204,7 +202,7 @@ async function getOpenAIResponse() {
 // =========================================
 
 function resetConversation() {
-  conversationHistory = conversationHistory.slice(0, 1); // Keep only system message
+  conversationHistory = [];
   chatContainer.innerHTML = `
     <div class="message bot-message">
       <div class="message-avatar">👗</div>
@@ -224,4 +222,4 @@ function resetConversation() {
 }
 
 // Add reset button listener if you add one to your HTML
-// document.getElementById('resetButton')?.addEventListener('click', resetConversati
+// document.getElementById('resetButton')?.addEventListener('click', resetConversation);
