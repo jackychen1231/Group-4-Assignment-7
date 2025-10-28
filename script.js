@@ -1,17 +1,16 @@
 // =========================================
-// FitGen AI • Chat Logic with Claude API
+// FitGen AI • Chat Logic with Backend API
 // -----------------------------------------
-// Handles user input, message display,
-// and real Claude API integration
+// Connects to your local backend server
+// which securely handles Claude API calls
 // =========================================
 
 const chatContainer = document.getElementById('chatContainer');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 
-// ⚠️ IMPORTANT: Replace with your actual Anthropic API key
-// For production, store this securely on your backend, NOT in frontend code
-const ANTHROPIC_API_KEY = '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';
+// Your backend endpoint (change if deployed elsewhere)
+const BACKEND_URL = 'https://group-4-assignment-7-r730wfujn-jacky-chens-projects-d8243720.vercel.app/';
 
 // Conversation history for context
 let conversationHistory = [];
@@ -67,7 +66,7 @@ async function sendMessage() {
   });
   
   try {
-    // Call Claude API
+    // Call your backend API
     const botResponse = await getClaudeResponse();
     
     // Add bot response to chat
@@ -80,8 +79,8 @@ async function sendMessage() {
     });
     
   } catch (error) {
-    console.error('Claude API Error:', error);
-    addMessage('Sorry, I encountered an error connecting to the AI service. Please try again! 😓', 'bot');
+    console.error('Backend API Error:', error);
+    addMessage('Sorry, I encountered an error connecting to the AI service. Please make sure the backend server is running! 😓', 'bot');
   } finally {
     // Re-enable send button
     sendButton.disabled = false;
@@ -169,28 +168,23 @@ function formatBotMessage(text) {
 }
 
 // =========================================
-// Claude API Integration
+// Backend API Call
 // =========================================
 
 async function getClaudeResponse() {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch(BACKEND_URL, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01'
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',  // Latest Claude Sonnet model
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: conversationHistory
+      messages: conversationHistory,
+      system: SYSTEM_PROMPT
     })
   });
   
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'API request failed');
+    throw new Error('Backend request failed');
   }
   
   const data = await response.json();
