@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<meta name="app-config" content='{"mode":"mock","baseUrl":"","stream":true}'>
+</head>
+<body>
+<header class="app-header">
+<h1>🛍️ Shopper Chatbot</h1>
+<div class="header-actions">
+<button id="btn-settings" class="btn">Settings</button>
+<button id="btn-clear" class="btn btn-secondary">Clear</button>
+</div>
+</header>
+
+
+<main class="grid">
+<section class="chat">
+<div id="chat-log" class="chat-log" aria-live="polite"></div>
+<form id="chat-form" class="chat-input" autocomplete="off">
+<input id="chat-text" name="message" placeholder="Ask about products, sizes, deals…" required />
+<button class="btn" type="submit">Send</button>
+</form>
+</section>
+
+
+<aside class="sidebar">
+<div class="card">
+<h2>Recommended</h2>
+<div id="recommendations" class="products"></div>
+</div>
+<div class="card">
+<h2>Cart</h2>
+<div id="cart"></div>
+<button id="checkout" class="btn btn-primary">Checkout</button>
+</div>
+</aside>
+</main>
+
+
+<dialog id="settings-modal">
+<form method="dialog" class="settings-form">
+<h3>Settings</h3>
+<label>Mode
+<select id="cfg-mode">
+<option value="mock">Mock (no backend)</option>
+<option value="cloud">Cloud (use API)</option>
+</select>
+</label>
+<label>API Base URL
+<input id="cfg-baseurl" placeholder="https://api.example.com" />
+</label>
+<label>
+Stream AI Replies
+<input type="checkbox" id="cfg-stream" checked />
+</label>
+<menu>
+<button value="cancel" class="btn btn-secondary">Cancel</button>
+<button id="cfg-save" value="default" class="btn">Save</button>
+</menu>
+</form>
+</dialog>
+
+
+<template id="tpl-message">
+<div class="msg">
+<div class="avatar" data-role></div>
+<div class="bubble" data-content></div>
+</div>
+</template>
+
+
+<template id="tpl-product">
+<div class="product">
+<img data-image alt="Product image" loading="lazy" />
+<div class="meta">
+<div class="name" data-name></div>
+<div class="price" data-price></div>
+<button class="btn btn-small" data-add>Add</button>
+</div>
+</div>
+</template>
+
+
+<script type="module" src="ai-integration.js"></script>
+<script type="module" src="script.js"></script>
+</body>
+</html>
