@@ -1,90 +1,80 @@
-// ai-integration.js
-return res.json();
+// OpenAI Shopper Chatbot Integration (Demo)
+// ⚠️ Demo only: do NOT ship real keys in frontend. Use a proxy in production.
+
+
+const OPENAI_API_KEY = "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"; // <-- demo only
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions"; // compatible endpoint
+const OPENAI_MODEL = "gpt-4o-mini"; // lightweight, multimodal-capable text model
+
+
+class AIShopper {
+constructor() {
+this.history = [];
+this.brandVoice = {
+tone: "friendly, concise, helpful",
+disclaimers: [
+"Prices and availability can change.",
+"For live order data, use the Track Order button or contact support.",
+],
+};
 }
 
 
-async #chatStream({ sessionId, message }){
-const res = await fetch(`${this.baseUrl}/chat`,{
-method:'POST', headers:{'Content-Type':'application/json','Accept':'text/event-stream'},
-body: JSON.stringify({ sessionId, message })
-});
-if(!res.ok) throw await toApiError(res);
-const reader = res.body.getReader();
-const decoder = new TextDecoder();
-let acc = ''; let done=false;
-while(!done){
-const chunk = await reader.read(); done = chunk.done; if(done) break;
-const text = decoder.decode(chunk.value, { stream: true });
-acc += text; // naive concat of streamed text
-self.dispatchEvent(new CustomEvent('ai:chunk',{ detail: { text } }));
-}
-return { reply: acc, sessionId };
+systemPrompt() {
+return `You are ShopBot, an expert shopping assistant for an online store.
+- Ask targeted questions to clarify budget, use case, constraints.
+- Synthesize comparisons with brief spec tables, pros/cons, and who it's for.
+- When asked for order status, call the {order_status} function (stub) with the order id if present, otherwise ask.
+- When asked about returns/shipping, summarize store policy from provided context, and cite source label like (Store FAQ).
+- Respect constraints (budget, size, platform). If not enough info, ask 1-2 smart follow-ups.
+- Be concise. Use lists and mini tables (markdown) when helpful.
+- Never invent inventory or exact prices—use ranges or say you need to check.
+`;
 }
 
 
-async products(query){
-if(this.mode==='mock') return mockProducts(query);
-const url = new URL(`${this.baseUrl}/products`);
-if(query?.q) url.searchParams.set('q', query.q);
-const res = await fetch(url);
-if(!res.ok) throw await toApiError(res);
-return res.json();
-}
-
-
-async event(type, payload){
-try{
-if(this.mode==='mock') return;
-await fetch(`${this.baseUrl}/events`,{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type, payload })});
-}catch{ /* non-fatal */ }
-}
-}
-
-
-async function toApiError(res){
-let msg = `${res.status} ${res.statusText}`;
-try{ const j = await res.json(); if(j?.error?.message) msg = j.error.message; }catch{}
-return new Error(msg);
-}
-
-
-// ------- Mock implementations (static demo) -------
-const SAMPLE_PRODUCTS = [
-{ id:'p1', sku:'HOOD-001', name:'Cozy Fleece Hoodie', price_cents:4999, image_url:'https://picsum.photos/seed/hoodie/200', category:'Hoodies'},
-{ id:'p2', sku:'SNEAK-002', name:'Everyday Sneakers', price_cents:6999, image_url:'https://picsum.photos/seed/sneaker/200', category:'Shoes'},
-{ id:'p3', sku:'BOTT-003', name:'Insulated Bottle 1L', price_cents:2499, image_url:'https://picsum.photos/seed/bottle/200', category:'Accessories'},
-{ id:'p4', sku:'TEES-004', name:'Premium Cotton Tee', price_cents:1999, image_url:'https://picsum.photos/seed/tee/200', category:'Tops'}
+async chat(userMessage, context = {}) {
+// Compose messages with lightweight memory (last 8 turns)
+const recent = this.history.slice(-8);
+const messages = [
+{ role: "system", content: this.systemPrompt() },
+...recent,
+{ role: "user", content: userMessage }
 ];
 
 
-function formatPrice(cents){ return `$${(cents/100).toFixed(2)}`; }
+const body = {
+model: OPENAI_MODEL,
+messages,
+temperature: 0.4,
+};
 
 
-async function mockProducts(query){
-const q = (query?.q||'').toLowerCase();
-const items = !q ? SAMPLE_PRODUCTS : SAMPLE_PRODUCTS.filter(p=> (p.name+p.category).toLowerCase().includes(q));
-return { items };
+try {
+const res = await fetch(OPENAI_URL, {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+Authorization: `Bearer ${OPENAI_API_KEY}`,
+},
+body: JSON.stringify(body),
+});
+
+
+if (!res.ok) throw new Error(`OpenAI error ${res.status}`);
+const data = await res.json();
+const reply = data.choices?.[0]?.message?.content?.trim() || "";
+
+
+this.history.push({ role: "user", content: userMessage });
+this.history.push({ role: "assistant", content: reply });
+return reply;
+} catch (err) {
+console.error(err);
+return "I had trouble reaching the AI. Please try again in a moment.";
+}
+}
 }
 
 
-async function mockChat({ message, sessionId }){
-const lower = message.trim().toLowerCase();
-// Tiny rule-based engine
-if(/(hood|warm)/.test(lower)){
-return { sessionId, reply: `Our **Cozy Fleece Hoodie** is a customer favorite for cold days. It’s warm, soft, and pairs well with the Premium Cotton Tee. Want me to add size M to your cart?`, recommendations: ['p1','p4'] };
-}
-if(/(bottle|water)/.test(lower)){
-return { sessionId, reply: `Staying hydrated? The **Insulated Bottle 1L** keeps drinks cold ~24h. BPA‑free, leakproof cap.`, recommendations: ['p3'] };
-}
-if(/(shoe|sneak|run|walk)/.test(lower)){
-return { sessionId, reply: `For everyday comfort, try **Everyday Sneakers**. Lightweight and supportive. Need help with sizing?`, recommendations: ['p2'] };
-}
-if(/(recommend|gift)/.test(lower)){
-return { sessionId, reply: `Here are a few picks based on what people bundle together: Hoodie + Bottle for cozy outdoor days; Sneakers + Tee for casual fits.`, recommendations: ['p1','p3','p2','p4'] };
-}
-return { sessionId, reply: `I can help with sizing, comparisons, and deals. Try: "compare hoodie vs tee" or "recommend a gift under $50".`, recommendations: ['p3','p4'] };
-}
-
-
-export function price(cents){ return formatPrice(cents); }
-export const MOCK_DATA = { SAMPLE_PRODUCTS };
+window.shopAI = new AIShopper();
