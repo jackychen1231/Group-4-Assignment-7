@@ -3,356 +3,68 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FitGen AI — CX Copilot & BI Assistant</title>
-<link rel="stylesheet" href="styles.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link
-href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-rel="stylesheet">
+<title>TechCorp AI Customer Service</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="app-container">
-
-  <!-- Header Section -->
-  <header class="app-header">
-    <div class="header-content">
-      <div class="logo-section">
-        <h1>👗 FitGen AI — CX Copilot</h1>
-        <p>AI-driven fit recommendations, churn/expansion insights, and executive-ready BI</p>
-      </div>
-
-      <div class="status-section">
-        <div class="ai-status" title="OpenAI integration">
-          <span class="status-dot active"></span>
-          <span>OpenAI Model: <strong>gpt-4o-mini</strong></span>
-        </div>
-        <div class="productivity-score">
-          <span class="score-label">Retention (All Segments)</span>
-          <span class="score-value" id="retentionRate">91.5%</span>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <!-- Quick Filters -->
-  <section class="stats-dashboard" style="margin-top:-10px;">
-    <div class="stat-card" style="grid-column: 1 / -1;">
-      <div class="stat-icon">🔎</div>
-      <div class="stat-info" style="width:100%;">
-        <div class="stat-label" style="margin-bottom:8px;">Filters</div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          <select id="segmentFilter" class="control-btn" style="border-radius:10px;">
-            <option value="all">All Segments</option>
-            <option>Enterprise</option>
-            <option>Mid-Market</option>
-            <option>SMB</option>
-            <option>Startup</option>
-          </select>
-          <select id="planFilter" class="control-btn" style="border-radius:10px;">
-            <option value="all">All Plans</option>
-            <option>Basic</option>
-            <option>Pro</option>
-            <option>Enterprise</option>
-          </select>
-          <select id="regionFilter" class="control-btn" style="border-radius:10px;">
-            <option value="all">All Regions</option>
-            <option>NA</option>
-            <option>EU</option>
-            <option>APAC</option>
-            <option>LATAM</option>
-          </select>
-          <input id="dateFrom" class="control-btn" type="date" />
-          <input id="dateTo" class="control-btn" type="date" />
-          <button id="applyFilters" class="control-btn">Apply</button>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Executive KPI Cards -->
-  <section class="stats-dashboard">
-    <div class="stat-card">
-      <div class="stat-icon">💰</div>
-      <div class="stat-info">
-        <div class="stat-value" id="mrrKpi">$485,750</div>
-        <div class="stat-label">Monthly Recurring Revenue</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">👥</div>
-      <div class="stat-info">
-        <div class="stat-value" id="activeCustomers">2,287</div>
-        <div class="stat-label">Active Customers</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">📈</div>
-      <div class="stat-info">
-        <div class="stat-value" id="expansionRate">32%</div>
-        <div class="stat-label">Avg Expansion Rate</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">🧪</div>
-      <div class="stat-info">
-        <div class="stat-value" id="churnAuc">0.86</div>
-        <div class="stat-label">Churn Model AUC</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">🔄</div>
-      <div class="stat-info">
-        <div class="stat-value" id="churnRate">8.5%</div>
-        <div class="stat-label">Customer Churn</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">💳</div>
-      <div class="stat-info">
-        <div class="stat-value" id="ltvKpi">$2,847</div>
-        <div class="stat-label">Avg Customer LTV</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">🛠</div>
-      <div class="stat-info">
-        <div class="stat-value" id="resolutionRate">73.8%</div>
-        <div class="stat-label">Ticket Resolution Rate</div>
-      </div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">⭐</div>
-      <div class="stat-info">
-        <div class="stat-value" id="csatScore">3.8/5</div>
-        <div class="stat-label">CSAT</div>
-      </div>
-    </div>
-  </section>
-
-  <!-- AI Chat Interface (FitGen prompts) -->
-  <section class="ai-chat-section">
-    <div class="chat-header">
-      <h2>💬 Ask the FitGen CX Copilot</h2>
-      <p>Query churn risk, expansion drivers, TTV, feature impact, and generate exec-ready insights</p>
-    </div>
-
-    <div class="chat-container" id="chatContainer">
-      <div class="message ai-message">
-        <div class="message-avatar">🤖</div>
-        <div class="message-content">
-          <p>Hi! I’m your FitGen AI Assistant. I can help you with:</p>
-          <ul>
-            <li>🧮 Churn risk by segment & feature usage</li>
-            <li>📊 Expansion drivers & upsell opportunities</li>
-            <li>🚀 Onboarding TTV impact on retention</li>
-            <li>🧠 Predictive insights with clear rationales</li>
-            <li>🧾 Executive summaries & roadmap suggestions</li>
-          </ul>
-          <p>What do you want to analyze first?</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="quick-actions">
-      <button class="quick-action-btn" data-action="add-task">
-        <span class="action-icon">➕</span><span>Create CX Initiative</span>
-      </button>
-      <button class="quick-action-btn" data-action="prioritize">
-        <span class="action-icon">🎯</span><span>Prioritize by ROI</span>
-      </button>
-      <button class="quick-action-btn" data-action="schedule">
-        <span class="action-icon">📅</span><span>Plan Onboarding TTV</span>
-      </button>
-      <button class="quick-action-btn" data-action="insights">
-        <span class="action-icon">📊</span><span>Get BI Insights</span>
-      </button>
-    </div>
-
-    <div class="chat-input-section">
-      <div class="input-container">
-        <input type="text" id="chatInput" placeholder="e.g., “Which cohort has the highest churn risk this week and why?”" maxlength="500">
-        <button id="sendButton" class="send-btn"><span class="send-icon">➤</span></button>
-      </div>
-      <div class="input-suggestions" id="inputSuggestions">
-        <button class="suggestion-btn">"Rank features by impact on expansion for Mid-Market"</button>
-        <button class="suggestion-btn">"Summarize churn drivers for SMB and actions"</button>
-        <button class="suggestion-btn">"Design a 14-day onboarding to cut TTV by 20%"</button>
-        <button class="suggestion-btn">"Create an executive summary for QBR"</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- Initiative Management Panel (repurposed Task Management) -->
-  <section class="task-management">
-    <div class="panel-header">
-      <h2>📋 CX & Growth Initiatives</h2>
-      <div class="panel-controls">
-        <button class="control-btn active" data-view="priority">Priority View</button>
-        <button class="control-btn" data-view="timeline">Timeline</button>
-        <button class="control-btn" data-view="categories">Categories</button>
-      </div>
-    </div>
-
-    <div class="task-container" id="taskContainer">
-      <!-- AI-Prioritized Initiatives -->
-      <div class="task-section">
-        <h3>🔥 High Priority (AI Recommended)</h3>
-        <div class="task-list" id="highPriorityTasks">
-          <div class="task-item high-priority">
-            <div class="task-checkbox">
-              <input type="checkbox" id="task1"><label for="task1"></label>
-            </div>
-            <div class="task-content">
-              <div class="task-title">Ship “Fit Confidence Widget” to Enterprise</div>
-              <div class="task-meta">
-                <span class="task-due">Due: Today 5:00 PM</span>
-                <span class="task-ai-score">AI Priority: 95%</span>
-              </div>
-              <div class="task-ai-reason">High revenue impact; reduces size-related returns</div>
-            </div>
-            <div class="task-actions">
-              <button class="task-action-btn">⏰</button>
-              <button class="task-action-btn">✏️</button>
-            </div>
-          </div>
-
-          <div class="task-item high-priority">
-            <div class="task-checkbox">
-              <input type="checkbox" id="task2"><label for="task2"></label>
-            </div>
-            <div class="task-content">
-              <div class="task-title">Launch “TTV Fast-Track” for SMB onboarding</div>
-              <div class="task-meta">
-                <span class="task-due">Due: Tomorrow 10:00 AM</span>
-                <span class="task-ai-score">AI Priority: 88%</span>
-              </div>
-              <div class="task-ai-reason">TTV ↓ → Retention ↑; unlocks 32% expansion targets</div>
-            </div>
-            <div class="task-actions">
-              <button class="task-action-btn">⏰</button>
-              <button class="task-action-btn">✏️</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="task-section">
-        <h3>⚡ Medium Priority</h3>
-        <div class="task-list" id="mediumPriorityTasks">
-          <div class="task-item medium-priority">
-            <div class="task-checkbox">
-              <input type="checkbox" id="task3"><label for="task3"></label>
-            </div>
-            <div class="task-content">
-              <div class="task-title">A/B test AI sizing copy on PDP</div>
-              <div class="task-meta">
-                <span class="task-due">Due: This week</span>
-                <span class="task-ai-score">AI Priority: 65%</span>
-              </div>
-              <div class="task-ai-reason">Improves adoption; supports expansion hypothesis</div>
-            </div>
-            <div class="task-actions">
-              <button class="task-action-btn">⏰</button>
-              <button class="task-action-btn">✏️</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="task-section">
-        <h3>📝 Low Priority</h3>
-        <div class="task-list" id="lowPriorityTasks">
-          <div class="task-item low-priority">
-            <div class="task-checkbox">
-              <input type="checkbox" id="task4"><label for="task4"></label>
-            </div>
-            <div class="task-content">
-              <div class="task-title">Refactor legacy CSV import tool</div>
-              <div class="task-meta">
-                <span class="task-due">No deadline</span>
-                <span class="task-ai-score">AI Priority: 25%</span>
-              </div>
-              <div class="task-ai-reason">Maintenance; minimal short-term KPI impact</div>
-            </div>
-            <div class="task-actions">
-              <button class="task-action-btn">⏰</button>
-              <button class="task-action-btn">✏️</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- AI Insights Panel (FitGen BI narratives) -->
-  <section class="insights-panel">
-    <div class="insights-header">
-      <h2>🧠 FitGen BI Insights</h2>
-      <button class="refresh-insights-btn" id="refreshInsights">🔄 Refresh</button>
-    </div>
-
-    <div class="insights-grid">
-      <div class="insight-card">
-        <div class="insight-icon">🧲</div>
-        <div class="insight-content">
-          <h4>Churn Risk Cohorts</h4>
-          <p>Highest predicted risk in <strong>SMB</strong> with <strong>low feature adoption</strong> and TTV &gt; 14 days. Target with onboarding “Fast-Track.”</p>
-        </div>
-      </div>
-
-      <div class="insight-card">
-        <div class="insight-icon">🚀</div>
-        <div class="insight-content">
-          <h4>Expansion Drivers</h4>
-          <p><strong>Integrations</strong> + <strong>Analytics</strong> usage correlates with <strong>+32% expansion</strong>. Bundle into Pro plan nudges.</p>
-        </div>
-      </div>
-
-      <div class="insight-card">
-        <div class="insight-icon">⏱</div>
-        <div class="insight-content">
-          <h4>TTV Impact</h4>
-          <p>Cutting <strong>TTV by 20%</strong> in onboarding cohorts is associated with higher 90-day retention and upsell probability.</p>
-        </div>
-      </div>
-
-      <div class="insight-card">
-        <div class="insight-icon">💹</div>
-        <div class="insight-content">
-          <h4>Revenue Uplift</h4>
-          <p>Prioritizing Enterprise “Fit Confidence Widget” yields near-term uplift; aligns with <strong>MRR $485,750</strong> growth targets.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer class="app-footer">
-    <div class="footer-content">
-      <p>Powered by OpenAI • Privacy-first • Built for FitGen BI</p>
-      <div class="footer-links">
-        <a href="#privacy">Privacy</a>
-        <a href="#help">Help</a>
-        <a href="#feedback">Feedback</a>
-      </div>
-    </div>
-  </footer>
-
+<div class="container">
+<header class="chat-header">
+<div class="header-content">
+<h1>🤖 TechCorp Customer Service</h1>
+<p>Get instant help with your questions • Available 24/7</p>
+<div class="status-indicator">
+<span class="status-dot online"></span>
+<span>AI Assistant Online</span>
 </div>
-
-<!-- Loading Overlay -->
-<div id="loadingOverlay" class="loading-overlay" style="display: none;">
-  <div class="loading-content">
-    <div class="loading-spinner"></div>
-    <h3>AI is Processing...</h3>
-    <p id="loadingMessage">Analyzing your request...</p>
-  </div>
 </div>
-
-<!-- Scripts -->
-<script src="ai-integration.js"></script>
+</header>
+<div class="chat-container" id="chatContainer">
+<div class="message bot-message">
+<div class="message-avatar">🤖</div>
+<div class="message-content">
+<p>Hello! I'm your AI customer service assistant. I can help you with:</p>
+<ul>
+<li>Product information and features</li>
+<li>Order status and shipping</li>
+<li>Returns and refunds</li>
+<li>Technical support</li>
+<li>Billing questions</li>
+</ul>
+<p>How can I assist you today?</p>
+</div>
+</div>
+</div>
+<div class="quick-responses" id="quickResponses">
+<button class="quick-btn" onclick="sendQuickMessage('How do I return a
+product?')">
+📦 Returns
+</button>
+<button class="quick-btn" onclick="sendQuickMessage('What is your shipping
+policy?')">
+🚚 Shipping
+</button>
+<button class="quick-btn" onclick="sendQuickMessage('I need technical
+support')">
+🔧 Tech Support
+</button>
+<button class="quick-btn" onclick="sendQuickMessage('Check my order
+status')">
+📋 Order Status
+</button>
+</div>
+<div class="input-section">
+<div class="input-container">
+<input type="text" id="userInput" placeholder="Type your question here..."
+maxlength="500">
+<button id="sendButton" onclick="sendMessage()">
+<span class="send-icon">➤</span>
+</button>
+</div>
+<div class="input-footer">
+<small>Press Enter to send • Powered by AI</small>
+</div>
+</div>
+</div>
 <script src="script.js"></script>
 </body>
 </html>
