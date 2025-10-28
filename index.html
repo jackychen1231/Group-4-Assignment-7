@@ -3,68 +3,88 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TechCorp AI Customer Service</title>
+<title>FitGen AI • Customer & Sizing Assistant</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="container">
-<header class="chat-header">
-<div class="header-content">
-<h1>🤖 TechCorp Customer Service</h1>
-<p>Get instant help with your questions • Available 24/7</p>
-<div class="status-indicator">
-<span class="status-dot online"></span>
-<span>AI Assistant Online</span>
+  <!-- Header -->
+  <header class="chat-header">
+    <div class="header-content">
+      <h1>🧵 FitGen AI — Sizing & Support</h1>
+      <p>Real-time fit recommendations, order help & care tips • 24/7</p>
+      <div class="status-indicator">
+        <span class="status-dot online"></span>
+        <span>AI Stylist Online</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Chat -->
+  <div class="chat-container" id="chatContainer">
+    <div class="message bot-message">
+      <div class="message-avatar">👗</div>
+      <div class="message-content">
+        <p>Hi! I’m your <strong>FitGen AI Stylist</strong>. I can help you with:</p>
+        <ul>
+          <li><strong>Find My Size:</strong> brand-specific sizing & fit advice</li>
+          <li><strong>Compare Fits:</strong> slim vs. regular vs. relaxed</li>
+          <li><strong>Returns & Exchanges:</strong> start a return or size swap</li>
+          <li><strong>Order Help:</strong> track shipments & update addresses</li>
+          <li><strong>Care & Materials:</strong> wash/dry guidance by fabric</li>
+        </ul>
+        <p>Tell me your height/weight or upload measurements, the brand, and how you like things to fit. I’ll recommend a size and confidence score.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="quick-responses" id="quickResponses">
+    <button class="quick-btn" onclick="sendQuickMessage('Help me find my size for the [Brand] [Product]. My measurements are: height __, weight __, chest __, waist __. I prefer a regular fit.')">
+      📏 Find My Size
+    </button>
+
+    <button class="quick-btn" onclick="sendQuickMessage('What size should I pick for [Brand] tops vs [Brand] tops? I like a relaxed fit.')">
+      🔁 Compare Brands
+    </button>
+
+    <button class="quick-btn" onclick="sendQuickMessage('How do returns and exchanges work? Can I swap for a different size?')">
+      🔄 Returns & Exchanges
+    </button>
+
+    <button class="quick-btn" onclick="sendQuickMessage('Track my order: number ________')">
+      📦 Track My Order
+    </button>
+
+    <button class="quick-btn" onclick="sendQuickMessage('What are the care instructions for a 60% cotton / 40% polyester hoodie?')">
+      🧼 Care Instructions
+    </button>
+
+    <button class="quick-btn" onclick="sendQuickMessage('Connect me to a human stylist, please.')">
+      🙋 Human Stylist
+    </button>
+  </div>
+
+  <!-- Input -->
+  <div class="input-section">
+    <div class="input-container">
+      <input
+        type="text"
+        id="userInput"
+        placeholder="Ask about sizing, returns, orders, or care…"
+        maxlength="500"
+        aria-label="Chat message input"
+      >
+      <button id="sendButton" onclick="sendMessage()" aria-label="Send message">
+        <span class="send-icon">➤</span>
+      </button>
+    </div>
+    <div class="input-footer">
+      <small>Press Enter to send • Powered by FitGen AI</small>
+    </div>
+  </div>
 </div>
-</div>
-</header>
-<div class="chat-container" id="chatContainer">
-<div class="message bot-message">
-<div class="message-avatar">🤖</div>
-<div class="message-content">
-<p>Hello! I'm your AI customer service assistant. I can help you with:</p>
-<ul>
-<li>Product information and features</li>
-<li>Order status and shipping</li>
-<li>Returns and refunds</li>
-<li>Technical support</li>
-<li>Billing questions</li>
-</ul>
-<p>How can I assist you today?</p>
-</div>
-</div>
-</div>
-<div class="quick-responses" id="quickResponses">
-<button class="quick-btn" onclick="sendQuickMessage('How do I return a
-product?')">
-📦 Returns
-</button>
-<button class="quick-btn" onclick="sendQuickMessage('What is your shipping
-policy?')">
-🚚 Shipping
-</button>
-<button class="quick-btn" onclick="sendQuickMessage('I need technical
-support')">
-🔧 Tech Support
-</button>
-<button class="quick-btn" onclick="sendQuickMessage('Check my order
-status')">
-📋 Order Status
-</button>
-</div>
-<div class="input-section">
-<div class="input-container">
-<input type="text" id="userInput" placeholder="Type your question here..."
-maxlength="500">
-<button id="sendButton" onclick="sendMessage()">
-<span class="send-icon">➤</span>
-</button>
-</div>
-<div class="input-footer">
-<small>Press Enter to send • Powered by AI</small>
-</div>
-</div>
-</div>
+
 <script src="script.js"></script>
 </body>
 </html>
