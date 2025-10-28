@@ -11,7 +11,7 @@ const sendButton = document.getElementById('sendButton');
 
 // ⚠️ IMPORTANT: Replace with your actual OpenAI API key
 // For production, store this securely on your backend, NOT in frontend code
-const OPENAI_API_KEY = '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';
+const OPENAI_API_KEY = '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';
 
 // Conversation history for context
 let conversationHistory = [
