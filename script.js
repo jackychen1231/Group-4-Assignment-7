@@ -1,75 +1,77 @@
-// script.js
-}catch(err){ toast('Could not load products; using local cache.'); renderProducts(MOCK_DATA.SAMPLE_PRODUCTS); }
+// Main Shopper Chatbot App
+class ShopApp {
+constructor() {
+this.isProcessing = false;
+this.sessionStart = Date.now();
+this.sampleCatalog = this.loadSampleCatalog();
+this.stats = { suggestions: 0, compared: 0, messages: 0 };
+this.init();
 }
 
 
-function renderProducts(items){
-$recs.innerHTML = '';
-for(const p of items){
-const node = renderProduct(p);
-$recs.appendChild(node);
-}
+init() {
+this.bindUI();
+this.renderInsights();
+this.log("Shopper Chatbot initialized");
 }
 
 
-function renderRecsByIds(ids){
-const items = MOCK_DATA.SAMPLE_PRODUCTS.filter(p=> ids.includes(p.id));
-renderProducts(items);
-}
+bindUI() {
+const input = document.getElementById("chatInput");
+const send = document.getElementById("sendButton");
+const chips = document.querySelectorAll(".quick-action-btn");
+const refresh = document.getElementById("refreshInsights");
 
 
-function renderProduct(p){
-const tpl = document.getElementById('tpl-product');
-const node = tpl.content.firstElementChild.cloneNode(true);
-node.querySelector('[data-image]').src = p.image_url;
-node.querySelector('[data-name]').textContent = p.name;
-node.querySelector('[data-price]').textContent = price(p.price_cents);
-node.querySelector('[data-add]').addEventListener('click', ()=> addToCart(p));
-return node;
-}
-
-
-function addToCart(p){
-const existing = state.cart.find(i=> i.id===p.id);
-if(existing) existing.qty++; else state.cart.push({ id:p.id, name:p.name, price_cents:p.price_cents, qty:1 });
-persistCart(); renderCart(); toast(`${p.name} added to cart`);
-}
-
-
-function persistCart(){ localStorage.setItem('cart', JSON.stringify(state.cart)); }
-
-
-function renderCart(){
-if(!state.cart.length){ $cart.textContent = 'Your cart is empty.'; return; }
-const total = state.cart.reduce((s,i)=> s + i.price_cents*i.qty, 0);
-$cart.innerHTML = state.cart.map(i=> `${i.qty}× ${i.name} — ${price(i.price_cents)}`).join('<br>') + `<hr>Total: <strong>${price(total)}</strong>`;
-}
-
-
-$checkout.addEventListener('click', ()=>{
-if(!state.cart.length) return toast('Cart is empty.');
-toast('Checkout is mocked in demo. Implement /orders in your API.');
+send.addEventListener("click", () => this.handleMessage());
+input.addEventListener("keypress", (e) => {
+if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); this.handleMessage(); }
 });
 
 
-$settings.addEventListener('click', ()=> dlg.showModal());
-$clear.addEventListener('click', ()=>{ state.cart=[]; persistCart(); renderCart(); $chatLog.innerHTML=''; toast('Cleared chat & cart.'); });
+chips.forEach((b) => b.addEventListener("click", (e) => {
+input.value = e.currentTarget.dataset.fill;
+this.handleMessage();
+}));
 
 
-dlg.addEventListener('close', ()=>{/* noop */});
-
-
-document.getElementById('cfg-save').addEventListener('click', ()=>{
-const mode = document.getElementById('cfg-mode').value;
-const baseUrl = document.getElementById('cfg-baseurl').value.trim();
-const stream = document.getElementById('cfg-stream').checked;
-const cfg = { mode, baseUrl, stream };
-saveConfig(cfg);
-toast('Settings saved.');
-});
-
-
-function toast(msg){
-const t = document.createElement('div'); t.className='toast'; t.textContent = msg; document.body.appendChild(t);
-setTimeout(()=> t.remove(), 2500);
+refresh.addEventListener("click", () => this.renderInsights(true));
 }
+
+
+// -------- Chat Flow --------
+async handleMessage() {
+if (this.isProcessing) return;
+const input = document.getElementById("chatInput");
+const msg = (input.value || "").trim();
+if (!msg) return this.toast("Type something to begin", "warning");
+
+
+this.isProcessing = true;
+this.toggleLoading(true, "Finding great matches…");
+this.addMessage(msg, "user");
+input.value = "";
+this.bumpStat("messages");
+
+
+// Lightweight intent router for demos
+const lower = msg.toLowerCase();
+if (lower.startsWith("track my order") || lower.includes("order #") || lower.includes("order status")) {
+const id = (msg.match(/[A-Z0-9]{6,}/) || [null])[0];
+this.addMessage(this.fakeOrderLookup(id), "ai");
+this.finish();
+return;
+}
+
+
+if (lower.startsWith("compare ") || lower.includes(" vs ")) {
+const table = this.demoCompare(msg);
+this.addMessage(table, "ai");
+this.bumpStat("compared");
+this.finish();
+return;
+}
+
+
+// Fallback to AI
+window.addEventListener("DOMContentLoaded", () => { window.app = new ShopApp(); });
