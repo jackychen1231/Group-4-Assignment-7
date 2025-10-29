@@ -1,16 +1,15 @@
 // =========================================
 // FitGen AI • Chat Logic with Backend API
 // -----------------------------------------
-// Connects to your local backend server
-// which securely handles Claude API calls
+// Connects to your backend API endpoint
 // =========================================
 
 const chatContainer = document.getElementById('chatContainer');
 const userInput = document.getElementById('userInput');
 const sendButton = document.getElementById('sendButton');
 
-// Your backend endpoint (change if deployed elsewhere)
-const BACKEND_URL = 'https://group-4-assignment-7-r730wfujn-jacky-chens-projects-d8243720.vercel.app/';
+// Use relative path - Vercel will handle routing
+const BACKEND_URL = '/api/chat';
 
 // Conversation history for context
 let conversationHistory = [];
@@ -80,7 +79,7 @@ async function sendMessage() {
     
   } catch (error) {
     console.error('Backend API Error:', error);
-    addMessage('Sorry, I encountered an error connecting to the AI service. Please make sure the backend server is running! 😓', 'bot');
+    addMessage('Sorry, I encountered an error connecting to the AI service. Please try again! 😓', 'bot');
   } finally {
     // Re-enable send button
     sendButton.disabled = false;
@@ -182,13 +181,20 @@ async function getClaudeResponse() {
       system: SYSTEM_PROMPT
     })
   });
-  // ...
   
   if (!response.ok) {
-    throw new Error('Backend request failed');
+    const errorText = await response.text();
+    console.error('Backend error:', errorText);
+    throw new Error(`Backend request failed: ${response.status}`);
   }
   
   const data = await response.json();
+  
+  // Check if there's an error in the response
+  if (data.error) {
+    throw new Error(data.error.message || 'API Error');
+  }
+  
   return data.content[0].text;
 }
 
