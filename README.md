@@ -1,5 +1,5 @@
 # Group-4-Assignment-7
-AI APPLICATION DEVELOPMENT AND TECHNICAL IMPLEMENTATION
+
 🧵 FitGen AI - Customer & Sizing Assistant
 An AI-powered fashion chatbot that provides personalized sizing recommendations, order support, and care instructions for e-commerce clothing stores. Built with Claude AI and deployed on Vercel.
 Show Image
