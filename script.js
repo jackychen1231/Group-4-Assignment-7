@@ -182,6 +182,7 @@ async function getClaudeResponse() {
       system: SYSTEM_PROMPT
     })
   });
+  // ...
   
   if (!response.ok) {
     throw new Error('Backend request failed');
